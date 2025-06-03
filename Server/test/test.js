@@ -1,105 +1,150 @@
-var chai = require('chai');
-var chaiHttp = require('chai-http');
-var app = require('../app');
-var should = chai.should();
-var Product = require('../models').Product;
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const should = chai.should();
+const User = require('../model/schema/user');
+const Meeting = require('../model/schema/meeting');
 
 chai.use(chaiHttp);
 
-describe('Product API', function(){
-    //Before each test we empty the database
-    beforeEach(function(done){
-        Product.destroy({
-            where: {},
-            truncate: true
-        });
-        done();
+// Import the server after setting up the test environment
+process.env.NODE_ENV = 'test';
+const app = require('../index');
+
+let authToken = '';
+let testUserId = '';
+let testMeetingId = '';
+
+describe('API Tests', function() {
+    this.timeout(10000); // Increase timeout for database operations
+
+    before(async function() {
+        // Wait for database connection
+        await new Promise(resolve => setTimeout(resolve, 2000));
     });
-    describe('/GET Products', function(){
-        it('Getting all Products', function(done){
-            chai.request(app).get('/Products').end(function(err, res){
-                res.should.have.status(200);
-                res.body.should.be.a('array');
-                done();
-            });
-        });
-    });
-    describe('/POST Products', function(){
-        it('Insert new Product', function(done){
-            var Product = {
-                title: 'Jack Ma',
-                author: 'Chen Wei',
-                category: 'Biography'
-            }
-            chai.request(app).post('/Products').send(Product).end(function(err, res){
-                res.should.have.status(200);
-                res.body.should.be.a('object');
-                done();
-            });
-        });
-    });
-    describe('/GET/:id Products', function(){
-        it('Get Product by id', function(done){
-            Product.create({
-                title: 'Jack Ma',
-                author: 'Chen Wei',
-                category: 'Biography'
-            }).then(function(Product){
-                chai.request(app).get('/Products/'+Product.id).end(function(err, res){
+
+    describe('User Authentication', function() {
+        it('should login with valid credentials', function(done) {
+            const loginData = {
+                username: 'admin@gmail.com',
+                password: 'admin123'
+            };
+
+            chai.request(app)
+                .post('/api/user/login')
+                .send(loginData)
+                .end(function(err, res) {
                     res.should.have.status(200);
                     res.body.should.be.a('object');
+                    res.body.should.have.property('token');
+                    res.body.should.have.property('user');
+                    authToken = res.body.token;
+                    testUserId = res.body.user._id;
                     done();
                 });
-            });
         });
-        it('Get Product by not existed id', function(done){
-            chai.request(app).get('/Products/100').end(function(err, res){
-                res.should.have.status(400);
-                res.body.should.equal('Product not found');
-                done();
-            })
-        });
-        it('Get Product by invalid id', function(done){
-            chai.request(app).get('/Products/abc').end(function(err, res){
-                res.should.have.status(400);
-                res.body.should.equal('Invalid ID supplied');
-                done();
-            });
+
+        it('should not login with invalid credentials', function(done) {
+            const loginData = {
+                username: 'invalid@gmail.com',
+                password: 'wrongpassword'
+            };
+
+            chai.request(app)
+                .post('/api/user/login')
+                .send(loginData)
+                .end(function(err, res) {
+                    res.should.have.status(401);
+                    res.body.should.have.property('error');
+                    done();
+                });
         });
     });
-    describe('/PUT/:id Products', function(){
-        it('Update Product by id', function(done){
-            Product.create({
-                title: 'Jack Ma',
-                author: 'Chen Wei',
-                category: 'Biography'
-            }).then(function(Product){
-                var ProductEdit = {
-                    title: 'Amor Fati',
-                    author: 'Rando Kim',
-                    category: 'Non Fiction'
-                }
-                chai.request(app).put('/Products/'+Product.id).send(ProductEdit).end(function(err, res){
+
+    describe('Meeting API', function() {
+        it('should create a new meeting', function(done) {
+            const meetingData = {
+                agenda: 'Test Meeting',
+                location: 'Conference Room A',
+                dateTime: '2024-01-15T10:00:00Z',
+                notes: 'This is a test meeting',
+                related: 'Project Discussion'
+            };
+
+            chai.request(app)
+                .post('/api/meeting/add')
+                .set('Authorization', authToken)
+                .send(meetingData)
+                .end(function(err, res) {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('message');
+                    res.body.should.have.property('meeting');
+                    testMeetingId = res.body.meeting._id;
+                    done();
+                });
+        });
+
+        it('should get all meetings', function(done) {
+            chai.request(app)
+                .get('/api/meeting/')
+                .set('Authorization', authToken)
+                .end(function(err, res) {
                     res.should.have.status(200);
                     res.body.should.be.a('array');
                     done();
                 });
-            })
         });
-    });
-    describe('/DELETE/:id Products', function(){
-        it('Delete Product by id', function(done){
-            Product.create({
-                title: 'Jack Ma',
-                author: 'Chen Wei',
-                category: 'Biography'
-            }).then(function(Product){
-                chai.request(app).delete('/Products/'+Product.id).end(function(err, res){
+
+        it('should get a meeting by id', function(done) {
+            chai.request(app)
+                .get('/api/meeting/view/' + testMeetingId)
+                .set('Authorization', authToken)
+                .end(function(err, res) {
                     res.should.have.status(200);
-                    res.body.should.equal(1);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('agenda');
                     done();
                 });
-            })
+        });
+
+        it('should update a meeting', function(done) {
+            const updatedData = {
+                agenda: 'Updated Test Meeting',
+                location: 'Conference Room B',
+                dateTime: '2024-01-15T14:00:00Z',
+                notes: 'This is an updated test meeting'
+            };
+
+            chai.request(app)
+                .put('/api/meeting/edit/' + testMeetingId)
+                .set('Authorization', authToken)
+                .send(updatedData)
+                .end(function(err, res) {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    done();
+                });
+        });
+
+        it('should delete a meeting', function(done) {
+            chai.request(app)
+                .delete('/api/meeting/delete/' + testMeetingId)
+                .set('Authorization', authToken)
+                .end(function(err, res) {
+                    res.should.have.status(200);
+                    res.body.should.have.property('message');
+                    done();
+                });
+        });
+
+        it('should not access meetings without authentication', function(done) {
+            chai.request(app)
+                .get('/api/meeting/')
+                .end(function(err, res) {
+                    res.should.have.status(401);
+                    res.body.should.have.property('message');
+                    done();
+                });
         });
     });
 });

@@ -77,23 +77,28 @@ let deleteData = async (req, res) => {
     try {
         const userId = req.params.id;
 
-        // Assuming you have retrieved the user document using userId
+        // Retrieve the user document using userId
         const user = await User.findById(userId);
-        if (process.env.DEFAULT_USERS.includes(user?.username)) {
-            return res.status(400).json({ message: `You don't have access to delete ${username}` })
-        }
+
         if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found', });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
+
+        // Check if user is in default users list (protected users)
+        if (process.env.DEFAULT_USERS && process.env.DEFAULT_USERS.includes(user.username)) {
+            return res.status(400).json({ message: `You don't have access to delete ${user.username}` });
+        }
+
         if (user.role !== 'superAdmin') {
             // Update the user's 'deleted' field to true
             await User.updateOne({ _id: userId }, { $set: { deleted: true } });
-            res.send({ message: 'Record deleted Successfully', });
+            return res.status(200).json({ message: 'Record deleted successfully' });
         } else {
-            res.status(404).json({ message: 'admin can not delete', });
+            return res.status(403).json({ message: 'Admin cannot be deleted' });
         }
     } catch (error) {
-        res.status(500).json({ error });
+        console.error('Delete user error:', error);
+        return res.status(500).json({ error: 'Failed to delete user' });
     }
 }
 
@@ -153,26 +158,45 @@ const edit = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { username, password } = req.body;
+
+        // Validate input
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
         // Find the user by username
         const user = await User.findOne({ username, deleted: false }).populate({
             path: 'roles'
         });
+
         if (!user) {
-            res.status(401).json({ error: 'Authentication failed, invalid username' });
-            return;
+            return res.status(401).json({ error: 'Authentication failed, invalid username' });
         }
+
         // Compare the provided password with the hashed password stored in the database
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
-            res.status(401).json({ error: 'Authentication failed,password does not match' });
-            return;
+            return res.status(401).json({ error: 'Authentication failed, password does not match' });
         }
-        // Create a JWT token
-        const token = jwt.sign({ userId: user._id }, 'secret_key', { expiresIn: '1d' });
 
-        res.status(200).setHeader('Authorization', `Bearer${token}`).json({ token: token, user });
+        // Create a JWT token using environment variable
+        const jwtSecret = process.env.JWT_SECRET || 'secret_key';
+        const token = jwt.sign({ userId: user._id }, jwtSecret, { expiresIn: '1d' });
+
+        return res.status(200).setHeader('Authorization', `Bearer ${token}`).json({
+            token: token,
+            user: {
+                _id: user._id,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                roles: user.roles
+            }
+        });
     } catch (error) {
-        res.status(500).json({ error: 'An error occurred' });
+        console.error('Login error:', error);
+        return res.status(500).json({ error: 'An error occurred during login' });
     }
 }
 

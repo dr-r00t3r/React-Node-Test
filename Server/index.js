@@ -25,18 +25,21 @@ app.get('/', async (req, res) => {
     res.send('Welcome to my world...')
 });
 
-// Get port from environment and store in Express.
-
-const server = app.listen(port, () => {
-    const protocol = (process.env.HTTPS === true || process.env.NODE_ENV === 'production') ? 'https' : 'http';
-    const { address, port } = server.address();
-    const host = address === '::' ? '127.0.0.1' : address;
-    console.log(`Server listening at ${protocol}://${host}:${port}/`);
-});
-
-
 // Connect to MongoDB
 const DATABASE_URL = process.env.DB_URL || 'mongodb://127.0.0.1:27017'
 const DATABASE = process.env.DB || 'Prolink'
 
 db(DATABASE_URL, DATABASE);
+
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+    const server = app.listen(port, () => {
+        const protocol = (process.env.HTTPS === true || process.env.NODE_ENV === 'production') ? 'https' : 'http';
+        const { address, port } = server.address();
+        const host = address === '::' ? '127.0.0.1' : address;
+        console.log(`Server listening at ${protocol}://${host}:${port}/`);
+    });
+}
+
+// Export the app for testing
+module.exports = app;
