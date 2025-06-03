@@ -255,8 +255,9 @@ Password: admin123
 ## � Application Screenshots
 
 ### Dashboard Overview
-![Prolink CRM Dashboard](https://github.com/dr-r00t3r/React-Node-Test/screenshots/dashboard.jpg)
-![Prolink CRM Dashboard](https://github.com/dr-r00t3r/React-Node-Test/screenshots/meeting.jpg)
+![Prolink CRM Dashboard](https://github.com/dr-r00t3r/React-Node-Test/blob/master/screenshots/dashboard.jpg)
+### Meeting Overview
+![Prolink CRM Dashboard Meeting](https://github.com/dr-r00t3r/React-Node-Test/blob/master/screenshots/meeting.jpg)
 
 The dashboard provides a comprehensive overview of your CRM data including:
 - **Task Statistics**: Total tasks, active tasks, and completed tasks
