@@ -252,7 +252,28 @@ Email: admin@gmail.com
 Password: admin123
 ```
 
-## 📚 API Documentation
+## � Application Screenshots
+
+### Dashboard Overview
+![Prolink CRM Dashboard](https://github.com/dr-r00t3r/React-Node-Test/screenshots/dashboard.jpg)
+![Prolink CRM Dashboard](https://github.com/dr-r00t3r/React-Node-Test/screenshots/meeting.jpg)
+
+The dashboard provides a comprehensive overview of your CRM data including:
+- **Task Statistics**: Total tasks, active tasks, and completed tasks
+- **Lead Management**: Total leads, active leads, pending leads, and sold leads
+- **Contact Management**: Contact statistics and management
+- **Property Tracking**: Property-related metrics
+- **Email and Call Reports**: Communication analytics with visual charts
+- **Module Data Reports**: Comprehensive data visualization
+
+### Key Features Visible:
+- 📊 **Interactive Charts**: Real-time data visualization
+- 📈 **Statistics Cards**: Quick overview of key metrics
+- 🎯 **Navigation Menu**: Easy access to all CRM modules (Leads, Contacts, Properties, Opportunities, etc.)
+- 📱 **Responsive Design**: Clean, modern interface that works on all devices
+- 🔍 **Data Insights**: Comprehensive reporting and analytics
+
+## �📚 API Documentation
 
 ### Base URL
 ```
